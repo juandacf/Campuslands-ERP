@@ -48,12 +48,14 @@ CREATE TABLE Campers (
     id_tipo_documento DECIMAL(4,0),
     id_direccion INTEGER,
     documento_acudiente VARCHAR(12),
-    estado_actual VARCHAR(50) ENUM('En proceso de ingreso', 'Inscrito', 'Aprobado', 'Cursando', 'Graduado', 'Expulsado', 'Retirado') NOT NULL,
+    estado_actual VARCHAR(50) NOT NULL,
+    CHECK (estado_actual IN ('En proceso de ingreso', 'Inscrito', 'Aprobado', 'Cursando', 'Graduado', 'Expulsado', 'Retirado')),
     nivel_riesgo VARCHAR(50),
     FOREIGN KEY (id_tipo_documento) REFERENCES TipoDocumento(id_tipo_documento),
     FOREIGN KEY (id_direccion) REFERENCES Direcciones(id_direccion),
     FOREIGN KEY (documento_acudiente) REFERENCES Acudientes(documento_acudiente)
 );
+
 
 CREATE TABLE TelefonosCamper (
     id_tel_camper INTEGER PRIMARY KEY AUTO_INCREMENT,
@@ -99,7 +101,7 @@ CREATE TABLE Evaluaciones (
 CREATE TABLE AreasEntrenamiento (
     id_area DECIMAL(3,0) PRIMARY KEY,
     nombre VARCHAR(80),
-    capacidad_maxima DECIMAL(2,0),
+    capacidad_maxima DECIMAL(2,0)
     
 );
 
@@ -122,7 +124,7 @@ CREATE TABLE Grupos (
     id_ruta DECIMAL(3,0),
     hora_inicio TIME,
     hora_fin TIME,
-    cupos_disponibles DECIMAL(2,0) 
+    cupos_disponibles DECIMAL(2,0) ,
     FOREIGN KEY (documento_trainer) REFERENCES Trainers(documento_trainer),
     FOREIGN KEY (id_area) REFERENCES AreasEntrenamiento(id_area),
     FOREIGN KEY (id_ruta) REFERENCES Rutas(id_ruta)
@@ -136,36 +138,18 @@ CREATE TABLE CampersGrupo (
     FOREIGN KEY (documento_camper) REFERENCES Campers(documento_camper)
 );
 
---nuevo
-CREATE TABLE HistorialEstadosCampers (
-    id_historial INTEGER PRIMARY KEY AUTO_INCREMENT,
-    documento_camper VARCHAR(12),
-    estado_anterior VARCHAR(50),
-    estado_nuevo VARCHAR(50),
-    fecha_cambio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (documento_camper) REFERENCES Campers(documento_camper)
-);
-
-
-CREATE TABLE Egresados (
-    documento_camper VARCHAR(12) PRIMARY KEY,
-    primer_nombre VARCHAR(50),
-    segundo_nombre VARCHAR(50),
-    primer_apellido VARCHAR(50),
-    segundo_apellido VARCHAR(50),
-    id_ruta DECIMAL(3,0),
-    fecha_graduacion DATE,
-    FOREIGN KEY (id_ruta) REFERENCES Rutas(id_ruta)
-);
 
 CREATE TABLE HistorialEstadosCampers (
     id_historial INTEGER PRIMARY KEY AUTO_INCREMENT,
     documento_camper VARCHAR(12),
-    estado_anterior VARCHAR(50),
-    estado_nuevo VARCHAR(50),
+    estado_anterior VARCHAR(50) NOT NULL,
+    estado_nuevo VARCHAR(50) NOT NULL,
     fecha_cambio DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CHECK (estado_anterior IN ('En proceso de ingreso', 'Inscrito', 'Aprobado', 'Cursando', 'Graduado', 'Expulsado', 'Retirado')),
+    CHECK (estado_nuevo IN ('En proceso de ingreso', 'Inscrito', 'Aprobado', 'Cursando', 'Graduado', 'Expulsado', 'Retirado')),
     FOREIGN KEY (documento_camper) REFERENCES Campers(documento_camper)
 );
+
 
 
 CREATE TABLE Egresados (
