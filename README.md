@@ -97,21 +97,7 @@ La base de datos implementa los siguientes roles de usuario:
 - **Coordinador**: Puede asignar campers a grupos y rutas.
 - **Auditor**: Solo tiene permisos de lectura sobre la base de datos.
 
-Para asignar un rol a un usuario en MySQL:
 
-```sql
-GRANT ADMINISTRADOR TO 'usuario_admin'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-## Contribuciones
-
-Si deseas contribuir a este proyecto, sigue estos pasos:
-
-1. Realiza un fork del repositorio.
-2. Crea una rama con tus cambios (`git checkout -b feature-nueva`).
-3. Sube tus cambios (`git commit -m 'Añadir nueva funcionalidad'`).
-4. Abre un Pull Request.
 
 ## Licencia
 
