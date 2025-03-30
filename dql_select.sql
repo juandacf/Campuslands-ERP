@@ -438,3 +438,234 @@ SELECT a.nombre, a.capacidad_maxima, COUNT(asis.id_asistencia) AS ocupacion_actu
 FROM AreasEntrenamiento a
 LEFT JOIN Asistencia asis ON a.id_area = asis.id_area
 GROUP BY a.id_area;
+
+-- JOINs Básicos (INNER JOIN, LEFT JOIN, etc.)
+
+-- 1. Obtener los nombres completos de los campers junto con el nombre de la ruta a la que están inscritos.
+SELECT c.primer_nombre, c.segundo_nombre, c.primer_apellido, c.segundo_apellido, r.nombre AS ruta
+FROM Campers c
+JOIN CampersGrupo cg ON c.documento_camper = cg.documento_camper
+JOIN Grupos g ON cg.id_grupo = g.id_grupo
+JOIN Rutas r ON g.id_ruta = r.id_ruta;
+
+-- 2. Mostrar los campers con sus evaluaciones (nota teórica, práctica, quizzes y nota final) por cada módulo.
+SELECT c.primer_nombre, c.segundo_nombre, c.primer_apellido, c.segundo_apellido,
+       m.nombre AS modulo, e.evaluacion_teorica, e.evaluacion_practica, e.trabajos_quizzes, e.nota_final
+FROM Evaluaciones e
+JOIN Campers c ON e.documento_camper = c.documento_camper
+JOIN Modulos m ON e.id_modulo = m.id_modulo;
+
+-- 3. Listar todos los módulos que componen cada ruta de entrenamiento.
+SELECT r.nombre AS ruta, m.nombre AS modulo
+FROM ModulosRuta mr
+JOIN Rutas r ON mr.id_ruta = r.id_ruta
+JOIN Modulos m ON mr.id_modulo = m.id_modulo;
+
+-- 4. Consultar las rutas con sus trainers asignados y las áreas en las que imparten clases.
+SELECT r.nombre AS ruta, t.primer_nombre, t.segundo_nombre, t.primer_apellido, t.segundo_apellido, a.nombre AS area
+FROM Grupos g
+JOIN Rutas r ON g.id_ruta = r.id_ruta
+JOIN Trainers t ON g.documento_trainer = t.documento_trainer
+JOIN AreasEntrenamiento a ON g.id_area = a.id_area;
+
+-- 5. Mostrar los campers junto con el trainer responsable de su ruta actual.
+SELECT c.primer_nombre, c.segundo_nombre, c.primer_apellido, c.segundo_apellido,
+       t.primer_nombre AS trainer_nombre, t.segundo_nombre AS trainer_segundo, 
+       t.primer_apellido AS trainer_apellido, t.segundo_apellido AS trainer_segundo_apellido
+FROM CampersGrupo cg
+JOIN Campers c ON cg.documento_camper = c.documento_camper
+JOIN Grupos g ON cg.id_grupo = g.id_grupo
+JOIN Trainers t ON g.documento_trainer = t.documento_trainer;
+
+-- 6. Obtener el listado de evaluaciones realizadas con nombre de camper, módulo y ruta.
+SELECT c.primer_nombre, c.segundo_nombre, c.primer_apellido, c.segundo_apellido,
+       m.nombre AS modulo, r.nombre AS ruta, e.nota_final
+FROM Evaluaciones e
+JOIN Campers c ON e.documento_camper = c.documento_camper
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+JOIN ModulosRuta mr ON m.id_modulo = mr.id_modulo
+JOIN Rutas r ON mr.id_ruta = r.id_ruta;
+
+-- 7. Listar los trainers y los horarios en que están asignados a las áreas de entrenamiento.
+SELECT t.primer_nombre, t.segundo_nombre, t.primer_apellido, t.segundo_apellido,
+       a.nombre AS area, g.hora_inicio, g.hora_fin
+FROM Grupos g
+JOIN Trainers t ON g.documento_trainer = t.documento_trainer
+JOIN AreasEntrenamiento a ON g.id_area = a.id_area;
+
+-- 8. Consultar todos los campers junto con su estado actual y el nivel de riesgo.
+SELECT primer_nombre, segundo_nombre, primer_apellido, segundo_apellido, estado_actual, nivel_riesgo
+FROM Campers;
+
+-- 9. Obtener todos los módulos de cada ruta junto con su porcentaje teórico, práctico y de quizzes.
+SELECT r.nombre AS ruta, m.nombre AS modulo,
+       AVG(e.evaluacion_teorica) AS promedio_teorico,
+       AVG(e.evaluacion_practica) AS promedio_practico,
+       AVG(e.trabajos_quizzes) AS promedio_quizzes
+FROM Evaluaciones e
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+JOIN ModulosRuta mr ON m.id_modulo = mr.id_modulo
+JOIN Rutas r ON mr.id_ruta = r.id_ruta
+GROUP BY r.nombre, m.nombre;
+
+-- 10. Mostrar los nombres de las áreas junto con los nombres de los campers que están asistiendo en esos espacios.
+SELECT a.nombre AS area, c.primer_nombre, c.segundo_nombre, c.primer_apellido, c.segundo_apellido
+FROM Asistencia asis
+JOIN Campers c ON asis.documento_camper = c.documento_camper
+JOIN AreasEntrenamiento a ON asis.id_area = a.id_area;
+
+
+
+-- JOINs con condiciones específicas
+
+-- 1. Listar los campers que han aprobado todos los módulos de su ruta (nota_final >= 60).
+SELECT DISTINCT c.documento_camper, c.primer_nombre, c.primer_apellido, r.nombre AS ruta
+FROM Campers c
+JOIN Evaluaciones e ON c.documento_camper = e.documento_camper
+JOIN ModulosRuta mr ON e.id_modulo = mr.id_modulo
+JOIN Rutas r ON mr.id_ruta = r.id_ruta
+GROUP BY c.documento_camper, c.primer_nombre, c.primer_apellido, r.nombre
+HAVING MIN(e.nota_final) >= 60;
+
+-- 2. Mostrar las rutas que tienen más de 10 campers inscritos actualmente.
+SELECT r.id_ruta, r.nombre, COUNT(cg.documento_camper) AS total_campers
+FROM Rutas r
+JOIN Grupos g ON r.id_ruta = g.id_ruta
+JOIN CampersGrupo cg ON g.id_grupo = cg.id_grupo
+GROUP BY r.id_ruta, r.nombre
+HAVING COUNT(cg.documento_camper) > 10;
+
+-- 3. Consultar las áreas que superan el 80% de su capacidad con el número actual de campers asignados.
+SELECT a.id_area, a.nombre, a.capacidad_maxima, COUNT(a.id_area) AS ocupacion_actual
+FROM AreasEntrenamiento a
+JOIN Asistencia at ON a.id_area = at.id_area
+WHERE at.fecha = CURDATE()
+GROUP BY a.id_area, a.nombre, a.capacidad_maxima
+HAVING COUNT(a.id_area) > (a.capacidad_maxima * 0.8);
+
+-- 4. Obtener los trainers que imparten más de una ruta diferente.
+SELECT t.documento_trainer, t.primer_nombre, t.primer_apellido, COUNT(DISTINCT g.id_ruta) AS total_rutas
+FROM Trainers t
+JOIN Grupos g ON t.documento_trainer = g.documento_trainer
+GROUP BY t.documento_trainer, t.primer_nombre, t.primer_apellido
+HAVING COUNT(DISTINCT g.id_ruta) > 1;
+
+-- 5. Listar las evaluaciones donde la nota práctica es mayor que la nota teórica.
+SELECT e.id_evaluacion, c.primer_nombre, c.primer_apellido, m.nombre AS modulo, e.evaluacion_teorica, e.evaluacion_practica
+FROM Evaluaciones e
+JOIN Campers c ON e.documento_camper = c.documento_camper
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+WHERE e.evaluacion_practica > e.evaluacion_teorica;
+
+-- 6. Mostrar campers que están en rutas cuyo SGDB principal es MySQL.
+SELECT c.documento_camper, c.primer_nombre, c.primer_apellido, r.nombre AS ruta
+FROM CampersGrupo cg
+JOIN Campers c ON cg.documento_camper = c.documento_camper
+JOIN Grupos g ON cg.id_grupo = g.id_grupo
+JOIN Rutas r ON g.id_ruta = r.id_ruta
+WHERE r.sgdb_principal = 'MySQL';
+
+-- 7. Obtener los nombres de los módulos donde los campers han tenido bajo rendimiento.
+SELECT DISTINCT m.nombre AS modulo
+FROM Evaluaciones e
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+WHERE e.nota_final < 60;
+
+-- 8. Consultar las rutas con más de 3 módulos asociados.
+SELECT r.id_ruta, r.nombre, COUNT(mr.id_modulo) AS total_modulos
+FROM Rutas r
+JOIN ModulosRuta mr ON r.id_ruta = mr.id_ruta
+GROUP BY r.id_ruta, r.nombre
+HAVING COUNT(mr.id_modulo) > 3;
+
+-- 9. Listar las inscripciones realizadas en los últimos 30 días con sus respectivos campers y rutas.
+SELECT c.documento_camper, c.primer_nombre, c.primer_apellido, r.nombre AS ruta, g.id_grupo
+FROM CampersGrupo cg
+JOIN Campers c ON cg.documento_camper = c.documento_camper
+JOIN Grupos g ON cg.id_grupo = g.id_grupo
+JOIN Rutas r ON g.id_ruta = r.id_ruta
+WHERE c.estado_actual = 'Inscrito' AND cg.id_camp_grup BETWEEN (SELECT MAX(id_camp_grup) - 30 FROM CampersGrupo) AND (SELECT MAX(id_camp_grup) FROM CampersGrupo);
+
+-- 10. Obtener los trainers que están asignados a rutas con campers en estado de “Alto Riesgo”.
+SELECT DISTINCT t.documento_trainer, t.primer_nombre, t.primer_apellido, r.nombre AS ruta
+FROM Trainers t
+JOIN Grupos g ON t.documento_trainer = g.documento_trainer
+JOIN CampersGrupo cg ON g.id_grupo = cg.id_grupo
+JOIN Campers c ON cg.documento_camper = c.documento_camper
+JOIN Rutas r ON g.id_ruta = r.id_ruta
+WHERE c.nivel_riesgo = 'Alto';
+
+--Joins con funciones de agregación
+
+-- 1. Obtener el promedio de nota final por módulo.
+SELECT e.id_modulo, m.nombre AS modulo, AVG(e.nota_final) AS promedio_nota_final
+FROM Evaluaciones e
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+GROUP BY e.id_modulo, m.nombre;
+
+-- 2. Calcular la cantidad total de campers por ruta.
+SELECT r.id_ruta, r.nombre AS ruta, COUNT(cg.documento_camper) AS total_campers
+FROM Rutas r
+JOIN Grupos g ON r.id_ruta = g.id_ruta
+JOIN CampersGrupo cg ON g.id_grupo = cg.id_grupo
+GROUP BY r.id_ruta, r.nombre;
+
+-- 3. Mostrar la cantidad de evaluaciones realizadas por cada trainer (según las rutas que imparte).
+SELECT t.documento_trainer, t.primer_nombre, t.primer_apellido, COUNT(e.id_evaluacion) AS total_evaluaciones
+FROM Trainers t
+JOIN Grupos g ON t.documento_trainer = g.documento_trainer
+JOIN CampersGrupo cg ON g.id_grupo = cg.id_grupo
+JOIN Evaluaciones e ON cg.documento_camper = e.documento_camper
+GROUP BY t.documento_trainer, t.primer_nombre, t.primer_apellido;
+
+-- 4. Consultar el promedio general de rendimiento por cada área de entrenamiento.
+SELECT a.id_area, a.nombre AS area, AVG(e.nota_final) AS promedio_rendimiento
+FROM AreasEntrenamiento a
+JOIN Asistencia at ON a.id_area = at.id_area
+JOIN Campers c ON at.documento_camper = c.documento_camper
+JOIN Evaluaciones e ON c.documento_camper = e.documento_camper
+GROUP BY a.id_area, a.nombre;
+
+-- 5. Obtener la cantidad de módulos asociados a cada ruta de entrenamiento.
+SELECT r.id_ruta, r.nombre AS ruta, COUNT(mr.id_modulo) AS total_modulos
+FROM Rutas r
+JOIN ModulosRuta mr ON r.id_ruta = mr.id_ruta
+GROUP BY r.id_ruta, r.nombre;
+
+-- 6. Mostrar el promedio de nota final de los campers en estado “Cursando”.
+SELECT AVG(e.nota_final) AS promedio_nota_cursando
+FROM Evaluaciones e
+JOIN Campers c ON e.documento_camper = c.documento_camper
+WHERE c.estado_actual = 'En curso';
+
+-- 7. Listar el número de campers evaluados en cada módulo.
+SELECT e.id_modulo, m.nombre AS modulo, COUNT(e.documento_camper) AS total_evaluados
+FROM Evaluaciones e
+JOIN Modulos m ON e.id_modulo = m.id_modulo
+GROUP BY e.id_modulo, m.nombre;
+
+-- 8. Consultar el porcentaje de ocupación actual por cada área de entrenamiento.
+SELECT a.id_area, a.nombre AS area, 
+       COUNT(at.documento_camper) AS campers_actuales,
+       (COUNT(at.documento_camper) / a.capacidad_maxima) * 100 AS porcentaje_ocupacion
+FROM AreasEntrenamiento a
+LEFT JOIN Asistencia at ON a.id_area = at.id_area AND at.fecha = CURDATE()
+GROUP BY a.id_area, a.nombre, a.capacidad_maxima;
+
+-- 9. Mostrar cuántos trainers tiene asignados cada área.
+SELECT a.id_area, a.nombre AS area, COUNT(DISTINCT g.documento_trainer) AS total_trainers
+FROM AreasEntrenamiento a
+JOIN Grupos g ON a.id_area = g.id_area
+GROUP BY a.id_area, a.nombre;
+
+-- 10. Listar las rutas que tienen más campers en riesgo alto.
+SELECT r.id_ruta, r.nombre AS ruta, COUNT(c.documento_camper) AS total_campers_riesgo_alto
+FROM Rutas r
+JOIN Grupos g ON r.id_ruta = g.id_ruta
+JOIN CampersGrupo cg ON g.id_grupo = cg.id_grupo
+JOIN Campers c ON cg.documento_camper = c.documento_camper
+WHERE c.nivel_riesgo = 'Alto'
+GROUP BY r.id_ruta, r.nombre
+ORDER BY total_campers_riesgo_alto DESC;
+
+
