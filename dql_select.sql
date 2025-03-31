@@ -366,7 +366,7 @@ FROM Evaluaciones e
 JOIN Modulos m ON e.id_modulo = m.id_modulo
 WHERE e.nota_final < 60
 GROUP BY m.id_modulo
-HAVING COUNT(*) > 0.3 * (SELECT COUNT(*) FROM Evaluaciones WHERE id_modulo = e.id_modulo);
+HAVING COUNT(*) > 0.3 * (SELECT COUNT(*) FROM Evaluaciones e WHERE id_modulo = e.id_modulo);
 
 -- 11. Mostrar el módulo más cursado por campers con riesgo alto
 SELECT m.nombre, COUNT(*) AS inscritos
