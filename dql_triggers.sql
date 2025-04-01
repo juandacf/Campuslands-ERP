@@ -1,14 +1,16 @@
 DELIMITER $$
 
 -- 1. Al insertar una evaluación, calcular automáticamente la nota final.
+DELIMITER $$
 CREATE TRIGGER trg_CalcularNotaFinal
 BEFORE INSERT ON Evaluaciones
 FOR EACH ROW
 BEGIN
     SET NEW.nota_final = (NEW.evaluacion_teorica * 0.4) + (NEW.evaluacion_practica * 0.4) + (NEW.trabajos_quizzes * 0.2);
 END $$
-
+DELIMITER ;
 -- 2. Al actualizar la nota final de un módulo, verificar si el camper aprueba o reprueba.
+DELIMITER $$
 CREATE TRIGGER trg_VerificarAprobacion
 AFTER UPDATE ON Evaluaciones
 FOR EACH ROW
@@ -19,16 +21,19 @@ BEGIN
         UPDATE Campers SET nivel_riesgo = 'Bajo' WHERE documento_camper = NEW.documento_camper;
     END IF;
 END $$
-
+DELIMITER ;
 -- 3. Al insertar una inscripción, cambiar el estado del camper a "Inscrito".
+DELIMITER $$
 CREATE TRIGGER trg_CambiarEstadoInscrito
 AFTER INSERT ON CampersGrupo
 FOR EACH ROW
 BEGIN
     UPDATE Campers SET estado_actual = 'Inscrito' WHERE documento_camper = NEW.documento_camper;
 END $$
+DELIMITER ;
 
 -- 4. Al actualizar una evaluación, recalcular su promedio inmediatamente.
+DELIMITER $$
 CREATE TRIGGER trg_RecalcularPromedio
 AFTER UPDATE ON Evaluaciones
 FOR EACH ROW
@@ -42,16 +47,20 @@ BEGIN
     UPDATE Campers SET nivel_riesgo = IF(nuevo_promedio < 60, 'Alto', 'Bajo')
     WHERE documento_camper = NEW.documento_camper;
 END $$
+DELIMITER ;
 
 -- 5. Al eliminar una inscripción, marcar al camper como “Retirado”.
+DELIMITER $$
 CREATE TRIGGER trg_MarcarRetirado
 AFTER DELETE ON CampersGrupo
 FOR EACH ROW
 BEGIN
     UPDATE Campers SET estado_actual = 'Retirado' WHERE documento_camper = OLD.documento_camper;
 END $$
+DELIMITER ;
 
 -- 6. Al insertar un nuevo módulo, registrar automáticamente su SGDB asociado.
+DELIMITER $$
 CREATE TRIGGER trg_AsignarSGDB
 BEFORE INSERT ON Modulos
 FOR EACH ROW
@@ -60,8 +69,9 @@ BEGIN
         SET NEW.nombre = CONCAT(NEW.nombre, ' (SGDB asociado)');
     END IF;
 END $$
-
+DELIMITER ;
 -- 7. Al insertar un nuevo trainer, verificar duplicados por identificación.
+DELIMITER $$
 CREATE TRIGGER trg_VerificarDuplicadosTrainer
 BEFORE INSERT ON Trainers
 FOR EACH ROW
@@ -70,8 +80,10 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Trainer ya registrado.';
     END IF;
 END $$
+    DELIMITER ;
 
 -- 8. Al asignar un área, validar que no exceda su capacidad.
+DELIMITER $$
 CREATE TRIGGER trg_ValidarCapacidadArea
 BEFORE INSERT ON Grupos
 FOR EACH ROW
@@ -86,8 +98,9 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Capacidad del área excedida.';
     END IF;
 END $$
-
+DELIMITER ;
 -- 9. Al insertar una evaluación con nota < 60, marcar al camper como “Bajo rendimiento”.
+DELIMITER $$
 CREATE TRIGGER trg_MarcarBajoRendimiento
 AFTER INSERT ON Evaluaciones
 FOR EACH ROW
@@ -96,8 +109,11 @@ BEGIN
         UPDATE Campers SET nivel_riesgo = 'Alto' WHERE documento_camper = NEW.documento_camper;
     END IF;
 END $$
+DELIMITER ;
 
 -- 10. Al cambiar de estado a “Graduado”, mover registro a la tabla de egresados.
+
+DELIMITER $$
 CREATE TRIGGER trg_MoverAEgresados
 AFTER UPDATE ON Campers
 FOR EACH ROW
@@ -110,9 +126,10 @@ END $$
 
 DELIMITER ;
 
-DELIMITER $$
+
 
 -- 11. Al modificar horarios de trainer, verificar solapamiento con otros.
+DELIMITER $$
 CREATE TRIGGER trg_VerificarSolapamientoHorarioTrainer
 BEFORE UPDATE ON Grupos
 FOR EACH ROW
@@ -130,7 +147,9 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ;
 -- 12. Al eliminar un trainer, liberar sus horarios y rutas asignadas.
+DELIMITER $$
 CREATE TRIGGER trg_LiberarHorariosRutasTrainer
 AFTER DELETE ON Trainers
 FOR EACH ROW
@@ -139,7 +158,10 @@ BEGIN
     DELETE FROM TrainersModulos WHERE documento_trainer = OLD.documento_trainer;
 END $$
 
+DELIMITER ;
+
 -- 13. Al cambiar la ruta de un camper, actualizar automáticamente sus módulos.
+DELIMITER $$
 CREATE TRIGGER trg_ActualizarModulosCamper
 AFTER UPDATE ON CampersGrupo
 FOR EACH ROW
@@ -149,7 +171,10 @@ BEGIN
     SELECT NEW.documento_camper, id_modulo, 0, 0, 0, 0 FROM ModulosRuta WHERE id_ruta = (SELECT id_ruta FROM Grupos WHERE id_grupo = NEW.id_grupo);
 END $$
 
+DELIMITER ;
 -- 14. Al insertar un nuevo camper, verificar si ya existe por número de documento.
+
+DELIMITER $$
 CREATE TRIGGER trg_VerificarDuplicadoCamper
 BEFORE INSERT ON Campers
 FOR EACH ROW
@@ -159,7 +184,9 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ;
 -- 15. Al actualizar la nota final, recalcular el estado del módulo automáticamente.
+DELIMITER $$
 CREATE TRIGGER trg_RecalcularEstadoModulo
 AFTER UPDATE ON Evaluaciones
 FOR EACH ROW
@@ -168,8 +195,10 @@ BEGIN
         UPDATE Modulos SET nombre = CONCAT(nombre, ' (Aprobado)') WHERE id_modulo = NEW.id_modulo;
     END IF;
 END $$
-
+DELIMITER ;
 -- 16. Al asignar un módulo, verificar que el trainer tenga ese conocimiento.
+
+DELIMITER $$
 CREATE TRIGGER trg_VerificarTrainerModulo
 BEFORE INSERT ON TrainersModulos
 FOR EACH ROW
@@ -181,7 +210,10 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ; 
 -- 17. Al cambiar el estado de un área a inactiva, liberar campers asignados.
+
+DELIMITER $$
 CREATE TRIGGER trg_LiberarCampersAreaInactiva
 AFTER UPDATE ON AreasEntrenamiento
 FOR EACH ROW
@@ -191,7 +223,10 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ;
 -- 18. Al crear una nueva ruta, clonar la plantilla base de módulos y SGDBs.
+
+DELIMITER $$
 CREATE TRIGGER trg_ClonarPlantillaRuta
 AFTER INSERT ON Rutas
 FOR EACH ROW
@@ -200,7 +235,10 @@ BEGIN
     SELECT NEW.id_ruta, id_modulo FROM ModulosRuta WHERE id_ruta = 1; -- Ruta plantilla base
 END $$
 
+DELIMITER ;
 -- 19. Al registrar la nota práctica, verificar que no supere 60% del total.
+
+DELIMITER $$
 CREATE TRIGGER trg_ValidarNotaPractica
 BEFORE INSERT ON Evaluaciones
 FOR EACH ROW
@@ -210,7 +248,10 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ; 
 -- 20. Al modificar una ruta, notificar cambios a los trainers asignados.
+
+DELIMITER $$
 CREATE TRIGGER trg_NotificarTrainersRuta
 AFTER UPDATE ON Rutas
 FOR EACH ROW
