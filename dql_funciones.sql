@@ -46,11 +46,11 @@ BEGIN
     WHERE documento_camper = documento_camper;
 
     IF promedio >= 80 THEN
-        RETURN 'Bajo';
+        RETURN 'Alto';
     ELSEIF promedio >= 60 THEN
         RETURN 'Medio';
     ELSE
-        RETURN 'Alto';
+        RETURN 'Bajo';
     END IF;
 END $$
 
